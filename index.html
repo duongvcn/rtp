@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Welcome to RTP/RCTP Demo</title>
+    <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="main.css">
+</head>
+
+<body>
+    <header>
+        <div class="topnav">
+            <div class="title">HỆ THỐNG VIDEO CALL HỘI NGHỊ SỬ DỤNG GIAO THỨC RTP VÀ RTCP</div>
+            <div id="buttons">
+                <button class="mdc-button mdc-button--raised joinRoom">
+                    <i class="material-icons mdc-button__icon" aria-hidden="true">perm_camera_mic</i>
+                    <span class="mdc-button__label">Vào Phòng</span>
+                </button>
+                <button class="mdc-button mdc-button--raised loginBtn">
+                    <i class="material-icons mdc-button__icon" aria-hidden="true">group</i>
+                    <span class="mdc-button__label">Đăng Nhập</span>
+                </button>
+                <button class="mdc-button mdc-button--raised" id="hangupBtn">
+                    <i class="material-icons mdc-button__icon" aria-hidden="true">close</i>
+                    <span class="mdc-button__label">Thoát</span>
+                </button>
+                <button class="mdc-button mdc-button--raised deleteRoom">
+                    <i class="material-icons mdc-button__icon" aria-hidden="true">close</i>
+                    <span class="mdc-button__label">Xoá phòng</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <div class="main-content ">
+        <div class="users"></div>
+        <div class="rooms-div">
+            <div class="roomName">
+                <div class="room-header">
+                    <div class="title">
+                        DANH SÁCH PHÒNG HIỆN TẠI:
+                    </div>
+                    <button class="mdc-button mdc-button--raised addRoom">
+                        <i class="material-icons mdc-button__icon" aria-hidden="true">group_add</i>
+                        <span class="mdc-button__label">Thêm Phòng</span>
+                    </button>
+                </div>
+                <ul class="rooms"></ul>
+
+            </div>
+        </div>
+        <div id="videos">
+            <div class="roomInfo"></div>
+            <div class="video-view">
+                <div>
+                    <video id="localVideo" muted autoplay playsinline></video>
+                    <video id="remoteVideo" autoplay playsinline></video>
+                </div>
+                <div class="remoteVideo"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+    <div class="mdc-dialog" id="addRoom-dialog" role="alertdialog" aria-modal="true" aria-labelledby="my-dialog-title"
+        aria-describedby="my-dialog-content">
+        <div class="mdc-dialog__container">
+            <div class="mdc-dialog__surface">
+                <h2 class="mdc-dialog__title" id="my-dialog-title">Tạo phòng</h2>
+                <div class="mdc-dialog__content" id="my-dialog-content">
+                    Mã phòng:
+                    <div class="mdc-text-field">
+                        <input type="text" id="code" maxlength="8" class="mdc-text-field__input">
+                        <div class="mdc-line-ripple"></div>
+                    </div>
+                    <br>
+                    <br>
+                    Tên Phòng:
+                    <div class="mdc-text-field">
+                        <input type="text" id="name" maxlength="255" class="mdc-text-field__input">
+                        <div class="mdc-line-ripple"></div>
+                    </div>
+                </div>
+                <footer class="mdc-dialog__actions">
+                    <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="no">
+                        <span class="mdc-button__label">Cancel</span>
+                    </button>
+                    <button id="addRoom" type="button" class="mdc-button mdc-dialog__button"
+                        data-mdc-dialog-action="yes">
+                        <span class="mdc-button__label">OK</span>
+                    </button>
+                </footer>
+            </div>
+        </div>
+        <div class="mdc-dialog__scrim"></div>
+    </div>
+    <div class="mdc-dialog" id="joinRoom-dialog" role="alertdialog" aria-modal="true" aria-labelledby="my-dialog-title"
+        aria-describedby="my-dialog-content">
+        <div class="mdc-dialog__container">
+            <div class="mdc-dialog__surface">
+                <h2 class="mdc-dialog__title" id="my-dialog-title">Vào phòng</h2>
+                <div class="mdc-dialog__content" id="my-dialog-content">
+                    Mã phòng:
+                    <div class="mdc-text-field">
+                        <input type="text" id="codeid" maxlength="8" class="mdc-text-field__input">
+                        <div class="mdc-line-ripple"></div>
+                    </div>
+                    <br>
+                    <br>
+                    Tên User:
+                    <div class="mdc-text-field">
+                        <input type="text" id="nameuser" maxlength="255" class="mdc-text-field__input">
+                        <div class="mdc-line-ripple"></div>
+                    </div>
+                </div>
+                <footer class="mdc-dialog__actions">
+                    <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="no">
+                        <span class="mdc-button__label">Cancel</span>
+                    </button>
+                    <button id="joinRoom" type="button" class="mdc-button mdc-dialog__button"
+                        data-mdc-dialog-action="yes">
+                        <span class="mdc-button__label">OK</span>
+                    </button>
+                </footer>
+            </div>
+        </div>
+        <div class="mdc-dialog__scrim"></div>
+    </div>
+    <div class="mdc-dialog" id="login-dialog" role="alertdialog" aria-modal="true" aria-labelledby="my-dialog-title"
+        aria-describedby="my-dialog-content">
+        <div class="mdc-dialog__container">
+            <div class="mdc-dialog__surface">
+                <h2 class="mdc-dialog__title" id="my-dialog-title">Admin Đăng Nhập</h2>
+                <div class="mdc-dialog__content" id="my-dialog-content">
+                    Nhập tên admin:
+                    <div class="mdc-text-field">
+                        <input type="text" id="username" class="mdc-text-field__input">
+                        <div class="mdc-line-ripple"></div>
+                    </div>
+                    <br>
+                    <br>
+                    Nhập mật khẩu:
+                    <div class="mdc-text-field">
+                        <input type="password" id="password" class="mdc-text-field__input">
+                        <div class="mdc-line-ripple"></div>
+                    </div>
+                </div>
+                <footer class="mdc-dialog__actions">
+                    <button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="no">
+                        <span class="mdc-button__label">Cancel</span>
+                    </button>
+                    <button id="loginBtn" type="button" class="mdc-button mdc-dialog__button"
+                        data-mdc-dialog-action="yes">
+                        <span class="mdc-button__label">OK</span>
+                    </button>
+                </footer>
+            </div>
+        </div>
+        <div class="mdc-dialog__scrim"></div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function interRoom(roomId) {
+            $("#codeid").val(roomId);
+            let admin = $("#adminName").html();
+            if (admin && !!admin.trim()) {
+                $("#nameuser").val(admin);
+                setTimeout(() => {
+                    $("#joinRoom").click();
+                }, 200);
+            } else {
+                $(".joinRoom").click();
+            }
+        }
+    </script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
+        import { getDatabase, ref, set, get, update, push, remove } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJ9uKsCbMpDGcr6IUqjZzo1iLISolGB2c",
+            authDomain: "duongvcn-68c05.firebaseapp.com",
+            databaseURL: "https://duongvcn-68c05-default-rtdb.firebaseio.com",
+            projectId: "duongvcn-68c05",
+            storageBucket: "duongvcn-68c05.appspot.com",
+            messagingSenderId: "44180220572",
+            appId: "1:44180220572:web:3e263c1c124be0e6591b59"
+        };
+
+        // Initialize Firebase
+        const firebaseApp = initializeApp(firebaseConfig);
+
+        // Get a reference to the database service
+        const firebaseDatabase = getDatabase(firebaseApp);
+        let loginDialog = new mdc.dialog.MDCDialog(document.querySelector('#login-dialog'));
+        let addRoomDialog = new mdc.dialog.MDCDialog(document.querySelector('#addRoom-dialog'));
+        let joinRoomDialog = new mdc.dialog.MDCDialog(document.querySelector('#joinRoom-dialog'));
+        let admin;
+        let rooms = [];
+        let users = [];
+        let usersObj;
+        let openRoomId;
+        let attendee;
+
+        $(".loginBtn").on("click", function (event) {
+            loginDialog.open();
+        });
+        $(".addRoom").on("click", function (event) {
+            addRoomDialog.open();
+        });
+        $(".joinRoom").on("click", function (event) {
+            joinRoomDialog.open();
+        });
+        $("#loginBtn").on("click", function (event) {
+            login();
+        });
+        $("#addRoom").on("click", function (event) {
+            addRoom(admin);
+        });
+        $("#joinRoom").on("click", function (event) {
+            let code = $("#codeid").val();
+            let name = $("#nameuser").val();
+            joinRoom(code, name);
+        });
+        $(".deleteRoom").on("click", function (event) {
+            remove(ref(firebaseDatabase, 'rooms/' + openRoomId));
+            closeCamera();
+        });
+
+        $("#hangupBtn").on("click", function (event) {
+            if (attendee) { remove(ref(firebaseDatabase, 'rooms/' + openRoomId + "/users/" + attendee)); }
+            $(".adminDelete").removeClass("adminDelete");
+            closeCamera();
+        });
+        function closeCamera() {
+            const tracks = document.querySelector('#localVideo').srcObject.getTracks();
+            if (tracks) {
+                tracks.forEach(track => {
+                    track.stop();
+                });
+
+                if (remoteStream) {
+                    remoteStream.getTracks().forEach(track => track.stop());
+                }
+
+                if (peerConnection) {
+                    peerConnection.close();
+                }
+            }
+            $(".rooms-div").show();
+            $("#videos").hide();
+            $(".users").html('');
+            $(".loginBtn").show();
+            $(".joinRoom").show();
+            $("#hangupBtn").hide();
+        }
+
+        function login() {
+            let username = $("#username").val();
+            let password = $("#password").val();
+            get(ref(firebaseDatabase, 'admins'))
+                .then((snapshot) => {
+                    if (snapshot.exists() && snapshot.val().find(x => x.name == username && x.password == password)) {
+                        $(".loginBtn").hide();
+                        $(".users").html(`Xin chào <span id="adminName">${username}</span>,`);
+                        $(".addRoom").show();
+                        $(".deleteRoom").addClass("adminDelete");
+                        admin = username;
+                    } else {
+                        alert("Thông tin đăng nhập không đúng")
+                    }
+                });
+        }
+        function getRooms() {
+            const roomsRef = ref(firebaseDatabase, 'rooms');
+            rooms = [];
+            $(".rooms").html('');
+            get(roomsRef).then((items) => {
+                $.each(items.val(), function (i, item) {
+                    rooms.push(item.id);
+                    $(".rooms").append(`<li onclick="interRoom(${item.id})" class="item">
+                        <h2>${item.name}</h2>
+                        <div>Mã phòng: ${item.id}</div>
+                        <div class="in-row"><span>Người tạo: ${item.createdBy} </span><span><i class="material-icons mdc-button__icon" aria-hidden="true">group</i><sup> ${item.users ? Object.keys(item.users).length : 0}</sup></span></div>
+                        </li>`);
+                });
+            }).catch(handleError);
+        }
+        function addRoom(username) {
+            if (!username) return;
+            const roomsRef = ref(firebaseDatabase, 'rooms');
+            const roomId = document.getElementById('code').value;
+            const roomName = document.getElementById('name').value;
+            if (rooms.includes(roomId)) {
+                alert("Mã phòng đã tồn tại.");
+            } else {
+                const roomRef = ref(firebaseDatabase, 'rooms/' + roomId);
+                set(roomRef, {
+                    "createdBy": username,
+                    "name": roomName,
+                    "id": roomId
+                }).then((snapshot) => {
+                    alert("Tạo phòng thành công");
+                    getRooms(username);
+                }).catch(handleError);
+            }
+        }
+        function joinRoom(code, name) {
+            attendee = name;
+            openRoomId = code;
+            const roomRef = ref(firebaseDatabase, 'rooms/' + openRoomId);
+            get(roomRef).then((item) => {
+                if (item.exists()) {
+                    $(".loginBtn").hide();
+                    $(".joinRoom").hide();
+                    $("#hangupBtn").show();
+                    loadUsers(code);
+                    joinVideoCall(code, name);
+                    $("#videos").show();
+                    $(".rooms-div").hide();
+                    $(".users").html(`Xin chào ${name},`);
+                    let room = item.val();
+                    $(".adminDelete").show();
+                    $(".roomInfo").html(`<label class="uppr">${room.name}</label><label> ID: ${room.id}</label><label> Người tạo: ${room.createdBy}</label>`);
+                } else {
+                    alert("Phòng không tồn tại")
+                }
+            }).catch(handleError);
+
+        }
+        function handleError(error) {
+            console.error('Error: ', error);
+        }
+        function createUser(roomId, username) {
+            const roomRef = ref(firebaseDatabase, 'rooms/' + roomId + "/users/" + username);
+            set(roomRef, username.replaceAll(/\s/g, '')).then((snapshot) => {
+                loadUsers(roomId);
+            }).catch(handleError);
+        }
+        function loadUsers(roomId) {
+            const usersRef = ref(firebaseDatabase, 'rooms/' + roomId + "/users");
+            $(".remoteVideo").html('')
+            get(usersRef)
+                .then((snapshot) => {
+                    let data = snapshot.val();
+                    users = []
+                    usersObj = data;
+                    for (var key in data) {
+                        users.push(key);
+                        if (key !== attendee) {
+                            $(".remoteVideo").append(`<div class="video-item"><video id="${key}" autoplay playsinline></video><span class="video-name">${key}</span></div>`);
+                        }
+                    }
+                })
+        }
+        // DEfault configuration - Change these if you have a different STUN or TURN server.
+        let peerConnection = null;
+        let localStream = null;
+        let remoteStream = null;
+        let roomId = null;
+
+        $(document).ready(function () {
+            getRooms();
+        });
+        async function joinVideoCall(roomId, username) {
+            if (!users.includes(username)) {
+                createUser(roomId, username);
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.querySelector('#localVideo').srcObject = stream;
+            localStream = stream;
+            remoteStream = new MediaStream();
+            document.querySelector('#remoteVideo').srcObject = remoteStream;
+            // let remoteItem = new MediaStream();
+            // let id = '#' + username;
+            // document.querySelector(id).srcObject = remoteItem;
+            // remoteStream = new MediaStream();
+            // document.querySelector('#remoteVideo').srcObject = remoteStream;
+            const configuration = {
+                iceServers: [
+                    {
+                        urls: [
+                            'stun:stun1.l.google.com:19302',
+                            'stun:stun2.l.google.com:19302',
+                        ],
+                    },
+                ],
+                iceCandidatePoolSize: 10,
+                room: roomId
+            };
+            peerConnection = new RTCPeerConnection(configuration);
+            registerPeerConnectionListeners();
+
+            // Add code for creating a room here
+            peerConnection.addEventListener('icecandidate', event => {
+                if (!event.candidate) {
+                    console.log('Got final candidate!');
+                    return;
+                }
+                console.log('Got candidate: ', event.candidate);
+                callerCandidatesCollection.add(event.candidate.toJSON());
+            });
+
+            // Code for creating room above
+
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+
+            // Code for creating a room below
+
+            // Code for creating a room above
+
+            // Code for collecting ICE candidates below
+
+            // Code for collecting ICE candidates above
+
+            peerConnection.addEventListener('track', event => {
+                console.log('Got remote track:', event.streams[0]);
+                event.streams[0].getTracks().forEach(track => {
+                    console.log('Add a track to the remoteStream:', track);
+                    remoteStream.addTrack(track);
+                });
+            });
+
+            // Listening for remote session description below
+
+            // Listening for remote session description above
+
+            // Listen for remote ICE candidates below
+
+            // Listen for remote ICE candidates above
+        }
+        function registerPeerConnectionListeners() {
+            peerConnection.addEventListener('icegatheringstatechange', () => {
+                console.log(
+                    `ICE gathering state changed: ${peerConnection.iceGatheringState}`);
+            });
+
+            peerConnection.addEventListener('connectionstatechange', () => {
+                console.log(`Connection state change: ${peerConnection.connectionState}`);
+            });
+
+            peerConnection.addEventListener('signalingstatechange', () => {
+                console.log(`Signaling state change: ${peerConnection.signalingState}`);
+            });
+
+            peerConnection.addEventListener('iceconnectionstatechange ', () => {
+                console.log(
+                    `ICE connection state change: ${peerConnection.iceConnectionState}`);
+            });
+        }
+    </script>
+</body>
+
+</html>

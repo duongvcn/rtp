@@ -1,0 +1,128 @@
+header {
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1;
+    background: #000;
+}
+
+.topnav {
+    overflow: hidden;
+    max-width: 1440px;
+    margin: auto;
+    color: #fff;
+    padding: 20px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.room-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    max-width: 400px;
+}
+
+.title {
+    line-height: 36px;
+}
+
+.main-content {
+    max-width: 1440px;
+    margin: auto;
+    padding: 20px;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-gap: 10px;
+}
+
+li {
+    background: #eee;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.in-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+sup {
+    color: red;
+    font-size: 20px;
+}
+
+.addRoom,
+#videos,
+#hangupBtn {
+    display: none;
+}
+
+div#videos #localVideo {
+    background: black;
+    width: 600px;
+    height: 500px;
+    display: block;
+    margin: 1em;
+}
+
+.deleteRoom {
+    display: none;
+}
+
+.videos {
+    display: none;
+}
+
+.uppr {
+    text-transform: uppercase;
+    font-weight: 900;
+}
+
+label,
+.username {
+    white-space: nowrap;
+    margin: 0 10px 0 0;
+}
+
+.video-view {
+    display: flex;
+    width: fit-content;
+    margin: auto;
+}
+
+.remoteVideo {
+    height: 500px;
+    overflow-y: auto;
+}
+
+.remoteVideo>div>video {
+    background: black;
+    width: 200px;
+    height: 200px;
+    display: block;
+    margin: 1em;
+}
+
+.video-item {
+    position: relative;
+}
+
+.video-name {
+    position: absolute;
+    color: #fff;
+    top: 10px;
+    left: 30px;
+}
+.item:hover{
+    background:rgb(12, 150, 95);
+    color:#fff;
+}
