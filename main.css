@@ -68,8 +68,7 @@ sup {
 
 div#videos #localVideo {
     background: black;
-    width: 600px;
-    height: 500px;
+    height: 350px;
     display: block;
     margin: 1em;
 }
@@ -106,8 +105,7 @@ label,
 
 .remoteVideo>div>video {
     background: black;
-    width: 200px;
-    height: 200px;
+    height: 150px;
     display: block;
     margin: 1em;
 }
@@ -122,7 +120,34 @@ label,
     top: 10px;
     left: 30px;
 }
-.item:hover{
-    background:rgb(12, 150, 95);
-    color:#fff;
+
+.item:hover {
+    background: rgb(12, 150, 95);
+    color: #fff;
+}
+
+.analyzer {
+    text-align: center;
+    width: 100%;
+}
+
+.relative {
+    position: relative;
+}
+
+.relative .users {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: white;
+}
+.remoteVideo>div>video.offline {
+    /* background: #fff;
+    height: 10px; */
+    display: none;  
+}
+.remoteVideo>div>video.offline+.video-name {
+    color:gray;
+    text-decoration: line-through;
+    top: 0;
 }

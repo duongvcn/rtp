@@ -9,7 +9,7 @@
     <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="main.css">
+    <link rel="stylesheet" type="text/css" href="main.css?te=12">
 </head>
 
 <body>
@@ -36,8 +36,8 @@
             </div>
         </div>
     </header>
+
     <div class="main-content ">
-        <div class="users"></div>
         <div class="rooms-div">
             <div class="roomName">
                 <div class="room-header">
@@ -56,11 +56,12 @@
         <div id="videos">
             <div class="roomInfo"></div>
             <div class="video-view">
-                <div>
+                <div class="relative">
                     <video id="localVideo" muted autoplay playsinline></video>
-                    <video id="remoteVideo" autoplay playsinline></video>
+                    <div class="users"></div>
                 </div>
-                <div class="remoteVideo"></div>
+                <div class="remoteVideo">
+                </div>
             </div>
         </div>
     </div>
@@ -180,20 +181,22 @@
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-app.js";
-        import { getDatabase, ref, set, get, update, push, remove } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js";
+        import { getDatabase, ref, set, get, update, push, remove, onChildAdded, onChildChanged, onChildRemoved } from "https://www.gstatic.com/firebasejs/10.7.2/firebase-database.js";
         // TODO: Add SDKs for Firebase products that you want to use
         // https://firebase.google.com/docs/web/setup#available-libraries
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyDJ9uKsCbMpDGcr6IUqjZzo1iLISolGB2c",
-            authDomain: "duongvcn-68c05.firebaseapp.com",
-            databaseURL: "https://duongvcn-68c05-default-rtdb.firebaseio.com",
-            projectId: "duongvcn-68c05",
-            storageBucket: "duongvcn-68c05.appspot.com",
-            messagingSenderId: "44180220572",
-            appId: "1:44180220572:web:3e263c1c124be0e6591b59"
+            apiKey: "AIzaSyCsVaScBoWw9UUZHFc2Dg4a-8bUcz7IoXs",
+            authDomain: "video-e4342.firebaseapp.com",
+            databaseURL: "https://video-e4342-default-rtdb.firebaseio.com",
+            projectId: "video-e4342",
+            storageBucket: "video-e4342.appspot.com",
+            messagingSenderId: "174948062696",
+            appId: "1:174948062696:web:33d1e6850ba036b1aa805d",
+            measurementId: "G-HM145BRDTW"
         };
+
 
         // Initialize Firebase
         const firebaseApp = initializeApp(firebaseConfig);
@@ -209,7 +212,8 @@
         let usersObj;
         let openRoomId;
         let attendee;
-
+        const roomsRef = ref(firebaseDatabase, 'rooms');
+        let currentRoomRef;
         $(".loginBtn").on("click", function (event) {
             loginDialog.open();
         });
@@ -233,11 +237,21 @@
         $(".deleteRoom").on("click", function (event) {
             remove(ref(firebaseDatabase, 'rooms/' + openRoomId));
             closeCamera();
+            for (var key in remoteStream) {
+                remoteStream[key].getTracks().forEach(track => track.stop());
+            }
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
         });
 
         $("#hangupBtn").on("click", function (event) {
-            if (attendee) { remove(ref(firebaseDatabase, 'rooms/' + openRoomId + "/users/" + attendee)); }
+            if (attendee) {
+                remove(ref(firebaseDatabase, 'rooms/' + openRoomId + "/users/" + attendee));
+            }
             $(".adminDelete").removeClass("adminDelete");
+            getRooms();
             closeCamera();
         });
         function closeCamera() {
@@ -246,14 +260,6 @@
                 tracks.forEach(track => {
                     track.stop();
                 });
-
-                if (remoteStream) {
-                    remoteStream.getTracks().forEach(track => track.stop());
-                }
-
-                if (peerConnection) {
-                    peerConnection.close();
-                }
             }
             $(".rooms-div").show();
             $("#videos").hide();
@@ -280,10 +286,9 @@
                 });
         }
         function getRooms() {
-            const roomsRef = ref(firebaseDatabase, 'rooms');
-            rooms = [];
-            $(".rooms").html('');
             get(roomsRef).then((items) => {
+                rooms = [];
+                $(".rooms").html('');
                 $.each(items.val(), function (i, item) {
                     rooms.push(item.id);
                     $(".rooms").append(`<li onclick="interRoom(${item.id})" class="item">
@@ -294,15 +299,14 @@
                 });
             }).catch(handleError);
         }
-        function addRoom(username) {
+        async function addRoom(username) {
             if (!username) return;
-            const roomsRef = ref(firebaseDatabase, 'rooms');
             const roomId = document.getElementById('code').value;
             const roomName = document.getElementById('name').value;
             if (rooms.includes(roomId)) {
                 alert("Mã phòng đã tồn tại.");
             } else {
-                const roomRef = ref(firebaseDatabase, 'rooms/' + roomId);
+                let roomRef = ref(firebaseDatabase, 'rooms/' + roomId);
                 set(roomRef, {
                     "createdBy": username,
                     "name": roomName,
@@ -316,34 +320,36 @@
         function joinRoom(code, name) {
             attendee = name;
             openRoomId = code;
-            const roomRef = ref(firebaseDatabase, 'rooms/' + openRoomId);
-            get(roomRef).then((item) => {
-                if (item.exists()) {
-                    $(".loginBtn").hide();
-                    $(".joinRoom").hide();
-                    $("#hangupBtn").show();
-                    loadUsers(code);
-                    joinVideoCall(code, name);
-                    $("#videos").show();
-                    $(".rooms-div").hide();
-                    $(".users").html(`Xin chào ${name},`);
-                    let room = item.val();
-                    $(".adminDelete").show();
-                    $(".roomInfo").html(`<label class="uppr">${room.name}</label><label> ID: ${room.id}</label><label> Người tạo: ${room.createdBy}</label>`);
-                } else {
-                    alert("Phòng không tồn tại")
-                }
-            }).catch(handleError);
-
+            loadUsers(code)
+            setTimeout(() => {
+                joinRoomValid(code, name)
+            }, 300)
+        }
+        function joinRoomValid(code, name) {
+            if (users.includes(name)) {
+                alert("Tên user đang tồn tại trong meeting!")
+            } else {
+                currentRoomRef = ref(firebaseDatabase, 'rooms/' + openRoomId);
+                get(currentRoomRef).then((item) => {
+                    if (item.exists()) {
+                        $(".loginBtn").hide();
+                        $(".joinRoom").hide();
+                        $("#hangupBtn").show();
+                        joinVideoCall(code, name);
+                        $("#videos").show();
+                        $(".rooms-div").hide();
+                        $(".users").html(`${name}`);
+                        let room = item.val();
+                        $(".adminDelete").show();
+                        $(".roomInfo").html(`<label class="uppr">${room.name}</label><label> ID: ${room.id}</label><label> Người tạo: ${room.createdBy}</label>`);
+                    } else {
+                        alert("Phòng không tồn tại")
+                    }
+                }).catch(handleError);
+            }
         }
         function handleError(error) {
             console.error('Error: ', error);
-        }
-        function createUser(roomId, username) {
-            const roomRef = ref(firebaseDatabase, 'rooms/' + roomId + "/users/" + username);
-            set(roomRef, username.replaceAll(/\s/g, '')).then((snapshot) => {
-                loadUsers(roomId);
-            }).catch(handleError);
         }
         function loadUsers(roomId) {
             const usersRef = ref(firebaseDatabase, 'rooms/' + roomId + "/users");
@@ -354,109 +360,174 @@
                     users = []
                     usersObj = data;
                     for (var key in data) {
-                        users.push(key);
-                        if (key !== attendee) {
-                            $(".remoteVideo").append(`<div class="video-item"><video id="${key}" autoplay playsinline></video><span class="video-name">${key}</span></div>`);
+                        if (!users.includes(key)) {
+                            users.push(key);
+                            if (key !== attendee) {
+                                $(".remoteVideo").append(`<div class="video-item ${key}"><video id="${data[key].mediaId}" autoplay playsinline></video><span class="video-name">${key}</span></div>`);
+                            }
                         }
                     }
                 })
         }
-        // DEfault configuration - Change these if you have a different STUN or TURN server.
+        
+        function updateUsers(roomId) {
+            const usersRef = ref(firebaseDatabase, 'rooms/' + roomId + "/users");
+            get(usersRef)
+                .then((snapshot) => {
+                    let data = snapshot.val();
+                    let temp = [];
+
+                    for (var key in data) {
+                        temp.push(key);
+                    }
+                    let removed = users.filter(function (item) {
+                        return !temp.includes(item);
+                    });
+                    let added = temp.filter(function (item) {
+                        return !users.includes(item);
+                    });
+                    removed.forEach(item => {
+                        $(`.remoteVideo .${item}`).remove();
+                    })
+                    added.forEach(key => {
+                        if (key !== attendee) {
+                            $(".remoteVideo").append(`<div class="video-item ${key}"><video id="${data[key].mediaId}" autoplay playsinline></video><span class="video-name">${key}</span></div>`);
+                        }
+                    })
+                    users = temp;
+                })
+        }
+
         let peerConnection = null;
         let localStream = null;
-        let remoteStream = null;
         let roomId = null;
+        let remoteStream = {};
+        let inCall = false;
+        const configuration = {
+            iceServers: [
+                {
+                    urls: [
+                        'stun:stun1.l.google.com:19302',
+                        'stun:stun2.l.google.com:19302',
+                    ],
+                },
+            ],
+            iceCandidatePoolSize: 10,
+            encodedInsertableStreams: true,
+        };
 
         $(document).ready(function () {
             getRooms();
         });
+
+        onChildChanged(ref(firebaseDatabase, 'rooms/'), (data) => {
+            getRooms();
+        });
+
+        setInterval(() => {
+            if (!inCall) return;
+            updateUsers(openRoomId);
+        }, 1500)
+
         async function joinVideoCall(roomId, username) {
-            if (!users.includes(username)) {
-                createUser(roomId, username);
-            }
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             document.querySelector('#localVideo').srcObject = stream;
             localStream = stream;
-            remoteStream = new MediaStream();
-            document.querySelector('#remoteVideo').srcObject = remoteStream;
-            // let remoteItem = new MediaStream();
-            // let id = '#' + username;
-            // document.querySelector(id).srcObject = remoteItem;
-            // remoteStream = new MediaStream();
-            // document.querySelector('#remoteVideo').srcObject = remoteStream;
-            const configuration = {
-                iceServers: [
-                    {
-                        urls: [
-                            'stun:stun1.l.google.com:19302',
-                            'stun:stun2.l.google.com:19302',
-                        ],
-                    },
-                ],
-                iceCandidatePoolSize: 10,
-                room: roomId
-            };
-            peerConnection = new RTCPeerConnection(configuration);
-            registerPeerConnectionListeners();
-
-            // Add code for creating a room here
-            peerConnection.addEventListener('icecandidate', event => {
-                if (!event.candidate) {
-                    console.log('Got final candidate!');
-                    return;
-                }
-                console.log('Got candidate: ', event.candidate);
-                callerCandidatesCollection.add(event.candidate.toJSON());
+            createPeerConnection(roomId, username);
+            addTracksToPeerConnection(localStream);
+            // createOffer();
+            onChildChanged(ref(firebaseDatabase, 'rooms/' + openRoomId + "/users/"), (data) => {
+                console.log("onChildChanged users", data.val());
+                loadUsers(openRoomId);
             });
-
-            // Code for creating room above
-
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-            });
-
-            // Code for creating a room below
-
-            // Code for creating a room above
-
-            // Code for collecting ICE candidates below
-
-            // Code for collecting ICE candidates above
-
-            peerConnection.addEventListener('track', event => {
-                console.log('Got remote track:', event.streams[0]);
-                event.streams[0].getTracks().forEach(track => {
-                    console.log('Add a track to the remoteStream:', track);
-                    remoteStream.addTrack(track);
-                });
-            });
-
-            // Listening for remote session description below
-
-            // Listening for remote session description above
-
-            // Listen for remote ICE candidates below
-
-            // Listen for remote ICE candidates above
+            inCall = true;
         }
-        function registerPeerConnectionListeners() {
-            peerConnection.addEventListener('icegatheringstatechange', () => {
-                console.log(
-                    `ICE gathering state changed: ${peerConnection.iceGatheringState}`);
+
+        function addUpdateUser(name, msg, id) {
+            let userRef = ref(firebaseDatabase, 'rooms/' + openRoomId + "/users/" + name);
+            set(userRef, { sender: name, message: msg, mediaId: id });
+        }
+
+        window.addEventListener('beforeunload', function (event) {
+            var confirmationMessage = 'Are you sure you want to leave?';
+            (event || window.event).returnValue = confirmationMessage;
+            if (confirmationMessage) {
+                $("#hangupBtn").click();
+            }
+            return confirmationMessage;
+        });
+
+        function createPeerConnection(roomId, username) {
+            peerConnection = new RTCPeerConnection();
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('Sending ICE candidate:', event.candidate);
+                    addUpdateUser(username, JSON.stringify({ 'ice': event.candidate }), localStream.id);
+                }
+            };
+            // peerConnection.addEventListener('track', gotRemoteStream);
+            peerConnection.ontrack = (event => {
+                console.log("ontrack", event.streams[0]);
+                let stream = event.streams[0];
+                let remoteVideo = document.getElementById(stream.id);
+                if (!remoteVideo) {
+                    loadUsers(openRoomId);
+                }
+                setTimeout(() => {
+                    remoteVideo = document.getElementById(stream.id)
+                    console.log(remoteVideo, stream);
+                    if (remoteVideo) {
+                        remoteVideo.srcObject = stream;
+                    }
+                }, 500);
             });
 
-            peerConnection.addEventListener('connectionstatechange', () => {
-                console.log(`Connection state change: ${peerConnection.connectionState}`);
-            });
+            peerConnection.onaddstream = (event) => {
+                addStream(event.stream);
+                // remoteVideo.srcObject = event.stream;
+                console.log("onaddstream", event);
+                let stream = event.stream;
+                let remoteVideo = document.getElementById(stream.id);
+                if (!remoteVideo) {
+                    loadUsers(openRoomId);
+                }
+                setTimeout(() => {
+                    remoteVideo = document.getElementById(stream.id)
+                    console.log(remoteVideo, stream);
+                    if (remoteVideo) {
+                        remoteVideo.srcObject = stream;
+                    }
+                }, 500);
+            };
 
-            peerConnection.addEventListener('signalingstatechange', () => {
-                console.log(`Signaling state change: ${peerConnection.signalingState}`);
-            });
+            peerConnection.oniceconnectionstatechange = (event) => {
+                console.log('ICE connection state:', peerConnection.iceConnectionState);
+            };
 
-            peerConnection.addEventListener('iceconnectionstatechange ', () => {
-                console.log(
-                    `ICE connection state change: ${peerConnection.iceConnectionState}`);
+            peerConnection.onnegotiationneeded = () => {
+                createOffer();
+            };
+        }
+
+        function addTracksToPeerConnection(stream) {
+            // peerConnection.addStream(stream);
+            stream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, stream);
             });
+        }
+
+        function createOffer() {
+            peerConnection.createOffer()
+                .then(offer => {
+                    peerConnection.setLocalDescription(offer);
+                    // Send the offer to the other peer
+                    console.log('Sending offer:', offer);
+                    addUpdateUser(attendee, JSON.stringify({ 'sdp': peerConnection.localDescription }), localStream.id);
+                })
+                .catch(error => {
+                    console.error('Error creating offer:', error);
+                });
         }
     </script>
 </body>
